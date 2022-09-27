@@ -1,0 +1,14 @@
+name: topic_curation
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - configargparse=1.5.3
+  - matplotlib=3.2.2
+  - numpy=1.21.5
+  - pypdf2=2.9.0
+  - wordcloud=1.8.2.2
+  - xlsxwriter=3.0.3
+  - pip:
+    - pillow==9.2.0
+    - reportlab==3.6.11

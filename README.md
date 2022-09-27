@@ -1,6 +1,6 @@
 Code for creating topic modeling curation files, for annotators to work with topic modeling output in order to label and describe the topics (thus creating human-usable codes, useful for content analysis).
 
-To run the scripts, first set up a conda environment and install the required libraries, run: `conda env create -n <env-name> -f environment.yaml`
+To run the scripts, first set up a conda environment and install the required libraries, run: `conda env create -n <env-name> -f environment.yml`
 
 The main base script is `create_topic_curation_files.py`, and generated output files that would be used for curation are in `example_data/outputs/`. 
 

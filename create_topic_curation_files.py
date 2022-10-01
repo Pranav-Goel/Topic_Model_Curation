@@ -56,20 +56,30 @@ def create_doc_topic_file_for_annotators(doc_topic,
     out_df.to_excel(Path(outpath) / 'document_topics.xlsx', index=False, float_format='%.3f')
     
 def create_topics_file_for_human_labeling_and_rating(topic_word,
+                                                     doc_topic,
+                                                     raw_texts,
                                                      vocab,
                                                      outpath,
                                                      num_top_words = 30,
-                                                     custom_cols = {}):
+                                                     custom_cols = {},
+                                                     show_top_docs_in_topic_file=False,
+                                                     top_doc_num_per_topic = 20):
     '''
     Generates and saves the topic-word file for topic curation, can also incorporate creating columns (with drop-down texts where needed) to get ratings/annotations for other things as one creates a label or name for the topic, like rating topic coherence [using custom_cols]
     
     Input:
     topic_word: the topic-word probability vector (num_topics X vocab_size) [2d numpy array]
+    doc_topic: (being input if few top docs should be shown in the topic_word file) (num_documents X num_topics) [2d numpy array]
+    raw_texts: (being input if few top docs should be shown in the topic_word file) [list]
     vocab: the corresponding words in the vocabulary [list]
     outpath: path to the directory for storing the generated file
     num_top_words: How many of the top words (using topic_word) per topic to include in the saved topic-word file that gets shown. 
     
     custom_cols: a dict where each key is the name of a ratings column to include, and value is a list of values that should be in a drop down for every cell in the column (if the user should choose one of the values to annotate or rate for that column; if the column if meant for free-text input, the list should be empty).
+    
+    show_top_docs_in_topic_file: [boolean]
+    top_doc_num_per_topic: if above is True, then how many top documents to show below the top words [positive int]
+    
     '''
     
     workbook = xlsxwriter.Workbook(Path(outpath) / 'topic_word.xlsx')
@@ -174,6 +184,13 @@ def create_topics_file_for_human_labeling_and_rating(topic_word,
         other_col_start += 1
         worksheet.write(chr(other_col_start) + str(issue_row), '', border_plus_highlighting)
         issue_row = issue_row + 2 + num_top_words
+        
+        if show_top_docs_in_topic_file:
+            top_doc_inds = np.argsort(list(doc_topic[:, k]))[::-1][:top_doc_num_per_topic]
+            selected_raw_texts = [raw_texts[doc_ind] for doc_ind in top_doc_inds]
+            for ii, text in enumerate(selected_raw_texts):
+                worksheet.write('A' + str(issue_row+ii), text)
+            issue_row = issue_row + len(selected_raw_texts) + 2
     
     workbook.close()
 
@@ -237,7 +254,10 @@ def create_topic_word_clouds_file(topic_word,
                                   outdir,
                                   num_words = 50):
     ''' generates the word clouds PDF [combined], control the number of words to use for generating clouds using num_words '''
-    pdf_outfile = outdir + "clouds.pdf"
+    if outdir[-1]=='/':
+        pdf_outfile = outdir + "clouds.pdf"
+    else:
+        pdf_outfile = outdir + "/clouds.pdf"
     num_topics, num_words = topic_word.shape
     pdfs = []
     for k in range(num_topics):
@@ -316,6 +336,14 @@ if __name__ == "__main__":
                type=int,
                help='Number of top words to use when generating topic-word word clouds, >=1')
     
+    parser.add('--show_top_docs_in_topic_word_file', 
+               action='store_true',
+               help='Specify this to show few top documents for the topic in the topic_words file itself')
+    parser.add('--num_top_docs_in_topic_word_file', 
+               default=20,
+               type=int,
+               help='Specify how many top documents for the topic in the topic_words file itself if show_top_docs_in_topic_word_file is being used')
+    
     
     args = parser.parse_args()
     
@@ -347,11 +375,20 @@ if __name__ == "__main__":
                                          args.num_top_docs)
     print('Document-topic file created.')
     
+    if args.show_top_docs_in_topic_word_file:
+        show_top_docs_in_topic_word_file = True
+    else:
+        show_top_docs_in_topic_word_file = False
+    
     create_topics_file_for_human_labeling_and_rating(topic_word,
+                                                     doc_topic,
+                                                     raw_texts,
                                                      vocab,
                                                      args.output,
                                                      args.num_top_words,
-                                                     custom_cols = {}) #for an example of generating topic-word file with columns to ask for ratings/annotations other than topic labeling, see the other script 'create_topic_curation_files_with_additional_rating_columns.py'
+                                                     custom_cols = {},
+                                                     show_top_docs_in_topic_file=show_top_docs_in_topic_word_file,
+                                                     top_doc_num_per_topic=args.num_top_docs_in_topic_word_file) #for an example of generating topic-word file with columns to ask for ratings/annotations other than topic labeling, see the other script 'create_topic_curation_files_with_additional_rating_columns.py'
     print('Topic-word file created.')
     
     print("Creating cloud PDFs...\n")
